@@ -2298,6 +2298,74 @@ Definition first3sum (l : list Z) :=
   | (a :: b :: c :: _ )=> a+b+c
   end.
 
+Theorem max3Realisable0 (l : list Z) : l = nil -> first3sum (sort l) = 0.
+Proof.
+  intros. subst. reflexivity.
+Qed.
+
+Theorem max3Realisable1 (l : list Z) : exists a, l = [a] -> first3sum (sort l) = a.
+Proof.
+  eexists. intros. subst. reflexivity.
+Qed.
+
+Theorem max3Realisable2 (l : list Z) : exists a b, l = [a;b] -> first3sum (sort l) = a + b.
+Proof.
+   eexists ?[a]. eexists ?[b]. intros. rewrite H.
+   simpl. edestruct (?a >=? ?b).
+   - simpl. reflexivity. 
+   - simpl. eapply Zplus_comm.
+   Unshelve. -- apply 1. -- apply 1.
+Qed.
+
+Theorem sortEmpty (l : list Z) : l = [] <-> sort l = [].
+Proof.
+  split.
+  - intros. subst. reflexivity.
+  - intros. destruct l; auto. simpl in H. destruct (sort l).
+  -- simpl in H. inversion H.
+  -- simpl in H. destruct (z >=? z0).
+  --- inversion H.
+  --- inversion H.
+Qed.  
+
+Theorem in_inserted (l : list Z) (a : Z) : 
+  In a (insert l a).
+Proof.
+  induction l.
+  - simpl. left. auto.
+  - simpl. destruct (a >=? a0).
+  -- simpl. left. auto.
+  -- simpl. right. auto. 
+Qed.
+
+Theorem in_insert_list (l : list Z) (a b : Z) : 
+  In a l -> In a (insert l b).
+Proof.
+  intros. induction l.
+  - inversion H.
+  - simpl in H. destruct H.
+  -- subst. simpl. destruct (b >=? a).
+  --- right. left. auto.
+  --- left. auto.
+  -- simpl. destruct (b >=? a0).
+  --- right. right. auto.
+  --- right. auto.     
+Qed.
+
+Theorem in_sort_invariant (l : list Z) (a : Z) :
+  In a l <-> In a (sort l).
+Proof.
+  split; intros.
+  - induction l.
+  -- inversion H.
+  -- inversion H.
+  --- subst. clear H. clear IHl. simpl. apply in_inserted.
+  --- apply IHl in H0. simpl. apply in_insert_list. auto.
+  - induction (sort l) eqn:Hsort.
+  -- inversion H.
+  --  
+Qed.
+
 Theorem max3Correct (l : list Z) : first3sum l <= first3sum (sort l).
 Proof.
   destruct l. { reflexivity. }
