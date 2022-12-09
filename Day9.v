@@ -2037,7 +2037,7 @@ Fixpoint set_add (pos : (Z*Z)) (l : list (Z*Z)) :=
   | (x',y') :: r => if x <? x' then (x',y') :: set_add pos r else if y <? y' then (x',y') :: set_add pos r else if andb (x =? x') (y =? y') then l else pos :: l
   end.
 
-Definition state : Type := ((Z*Z)*(Z*Z)*list (Z*Z)).
+Definition state : Type := ((Z*Z)*list (Z*Z)*list (Z*Z)).
 
 Definition move_close (h : Z*Z) (t : Z*Z) : Z*Z :=
   let (hx,hy) := h in
@@ -2047,77 +2047,6 @@ Definition move_close (h : Z*Z) (t : Z*Z) : Z*Z :=
   else
     t
 .
-
-Definition step_right (curState : state) : state :=
-  let (p,seen)  := curState in
-  let (h,t)  := p in
-  let (hx,hy) := h in
-  let (tx,ty) := t in
-  let h' := (hx+1,hy) in
-  let t' := move_close h' (tx,ty) in
-  (h',t',set_add t' seen)
-.
-
-Definition step_left (curState : state) : state :=
-  let (p,seen)  := curState in
-  let (h,t)  := p in
-  let (hx,hy) := h in
-  let (tx,ty) := t in
-  let h' := (hx-1,hy) in
-  let t' := move_close h' (tx,ty) in
-  (h',t',set_add t' seen)
-.
-
-Definition step_up (curState : state) : state :=
-  let (p,seen)  := curState in
-  let (h,t)  := p in
-  let (hx,hy) := h in
-  let (tx,ty) := t in
-  let h' := (hx,hy+1) in
-  let t' := move_close h' (tx,ty) in
-  (h',t',set_add t' seen)
-.
-
-Definition step_down (curState : state) : state :=
-  let (p,seen)  := curState in
-  let (h,t)  := p in
-  let (hx,hy) := h in
-  let (tx,ty) := t in
-  let h' := (hx,hy-1) in
-  let t' := move_close h' (tx,ty) in
-  (h',t',set_add t' seen)
-.
-
-Fixpoint n_times {A} (t : nat) (f : A -> A) (a : A):=
-  match t with
-  | O => a
-  | S n => n_times n f (f a)
-  end.
-
-Definition step (m : move) (curState : state) : state :=
-  let (p,seen)  := curState in
-  let (h,t)  := p in
-  let (hx,hy) := h in
-  let (tx,ty) := t in
-  match m with
-  | R n => n_times n step_right curState
-  | L n => n_times n step_left curState
-  | U n => n_times n step_up curState
-  | D n => n_times n step_down curState
-  end.
-
-Definition flip {A B C} (f : A -> B -> C) (b : B) (a : A) :=
-  f a b.
-
-Definition impl_1 (i : list move) :=
-  let (p,seen) := (fold_left (flip step) i ((0,0),(0,0),[(0,0)])) in
-  length seen.
-
-Example test1 : impl_1 test_in = 13%nat. Proof. vm_compute. reflexivity. Qed.
-
-Compute (impl_1 input).
-
-Definition state_2 : Type := ((Z*Z)*list (Z*Z)*list (Z*Z)).
 
 Fixpoint update_rope (prev : Z*Z) (l : list (Z*Z)) :=
   match l with
@@ -2132,7 +2061,7 @@ Fixpoint plast (l : list (Z*Z)) :=
   | h :: t => plast t
   end.
 
-Definition step_right_2 (curState : state_2) : state_2 :=
+Definition step_right (curState : state) : state :=
   let (p,seen)  := curState in
   let (h,t)  := p in
   let (hx,hy) := h in
@@ -2141,7 +2070,7 @@ Definition step_right_2 (curState : state_2) : state_2 :=
   (h',t',set_add (plast t') seen)
 .
 
-Definition step_left_2 (curState : state_2) : state_2 :=
+Definition step_left (curState : state) : state :=
   let (p,seen)  := curState in
   let (h,t)  := p in
   let (hx,hy) := h in
@@ -2149,7 +2078,7 @@ Definition step_left_2 (curState : state_2) : state_2 :=
   let t' := update_rope h' t in
   (h',t',set_add (plast t') seen)
 .
-Definition step_up_2 (curState : state_2) : state_2 :=
+Definition step_up (curState : state) : state :=
   let (p,seen)  := curState in
   let (h,t)  := p in
   let (hx,hy) := h in
@@ -2157,7 +2086,7 @@ Definition step_up_2 (curState : state_2) : state_2 :=
   let t' := update_rope h' t in
   (h',t',set_add (plast t') seen)
 .
-Definition step_down_2 (curState : state_2) : state_2 :=
+Definition step_down (curState : state) : state :=
   let (p,seen)  := curState in
   let (h,t)  := p in
   let (hx,hy) := h in
@@ -2166,16 +2095,33 @@ Definition step_down_2 (curState : state_2) : state_2 :=
   (h',t',set_add (plast t') seen)
 .
 
-Definition step_2 (m : move) (curState : state_2) : state_2 :=
-  match m with
-  | R n => n_times n step_right_2 curState
-  | L n => n_times n step_left_2 curState
-  | U n => n_times n step_up_2 curState
-  | D n => n_times n step_down_2 curState
+Fixpoint n_times {A} (t : nat) (f : A -> A) (a : A):=
+  match t with
+  | O => a
+  | S n => n_times n f (f a)
   end.
 
+Definition step (m : move) (curState : state) : state :=
+  match m with
+  | R n => n_times n step_right curState
+  | L n => n_times n step_left curState
+  | U n => n_times n step_up curState
+  | D n => n_times n step_down curState
+  end.
+
+Definition flip {A B C} (f : A -> B -> C) (b : B) (a : A) :=
+  f a b.
+
+Definition impl_1 (i : list move) :=
+  let (p,seen) := (fold_left (flip step) i ((0,0),[(0,0)],[(0,0)])) in
+  length seen.
+
+Example test1 : impl_1 test_in = 13%nat. Proof. vm_compute. reflexivity. Qed.
+
+Compute (impl_1 input).
+
 Definition impl_2 (i : list move) :=
-  let (p,seen) := (fold_left (flip step_2) i ((0,0),[(0,0);(0,0);(0,0);(0,0);(0,0);(0,0);(0,0);(0,0);(0,0)],[(0,0)])) in
+  let (p,seen) := (fold_left (flip step) i ((0,0),[(0,0);(0,0);(0,0);(0,0);(0,0);(0,0);(0,0);(0,0);(0,0)],[(0,0)])) in
   length seen.
 
 Example test2 : impl_2 test_in = 1%nat. Proof. vm_compute. reflexivity. Qed.
