@@ -114,11 +114,11 @@ End Part1.
 Section Part2.
 Definition monkey_item_step (monkeys : list monkey) (idx : nat) :=
   match nth idx monkeys fail_monkey with
-  | (Monkey _ [] _ _ _ _) => monkeys 
-  | (Monkey _ (i::r) op test throwt throwf) => 
-    let i' := op i in
+  | (Monkey _ [] _ _ _ _) => monkeys
+  | (Monkey _ (i::r) op test throwt throwf) =>
+    let i' := N.modulo (op i) (2*3*5*7*11*13*17*19*23) in
     let target := if test i' then throwt else throwf in
-    (update_nth target (fun m => match m with | (Monkey idxt lt opt testt throwtt throwft) => Monkey idxt (lt++[i']) opt testt throwtt throwft end) 
+    (update_nth target (fun m => match m with | (Monkey idxt lt opt testt throwtt throwft) => Monkey idxt (lt++[i']) opt testt throwtt throwft end)
     (update_nth idx (fun _ => Monkey idx r op test throwt throwf) monkeys))
   end.
 
@@ -140,7 +140,7 @@ Fixpoint round' (monkeys : list monkey) (cur : nat) (mb : list N):=
   | S n => let (m',mb') := monkey_step monkeys (length monkeys - S n) mb in round' m' n mb'
   end.
 
-Definition round (monkeystate : list monkey * list N) := round' (fst monkeystate) (length (fst monkeystate)) (snd monkeystate). 
+Definition round (monkeystate : list monkey * list N) := round' (fst monkeystate) (length (fst monkeystate)) (snd monkeystate).
 
 Fixpoint ntimes' {A} (n : positive) (f : A -> A) (a : A) :=
   match n with
@@ -154,6 +154,8 @@ Definition ntimes {A} (n : N) (f : A -> A) (a : A) :=
   | N0 => a
   | Npos p => ntimes' p f a
   end.
+
+Compute ntimes 10000 (fun x => x + 1) 0.
 
 Fixpoint insert (l : list N) (new : N) :=
   match l with
@@ -180,6 +182,6 @@ Example test1 : impl_1 test_in = 10605. Proof. vm_compute. reflexivity. Qed.
 
 Compute impl_1 input.
 
-Compute impl_2 input.
-
 Example test2 : impl_2 test_in = 2713310158. Proof. vm_compute. reflexivity. Qed.
+
+Compute impl_2 input.

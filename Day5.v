@@ -1,5 +1,6 @@
 From Coq Require Import Lists.List.
 From Coq Require Import Strings.Ascii.
+From Coq Require Import Nat Psatz.
 Import ListNotations.
 
 Open Scope char_scope.
@@ -585,6 +586,8 @@ Qed.
 Compute (impl_1 input_stacks input_moves).
 Compute (impl_2 input_stacks input_moves).
 
+Close Scope char_scope.
+
 Fixpoint lsum (l : list nat) : nat :=
   match l with
   | nil => 0
@@ -608,8 +611,48 @@ Proof.
   --- apply IHl. intros. apply H. right. auto.
 Qed.
 
+Lemma edit_nil {A} (idx : nat) (f : A -> A) : edit idx f [] = [].
+Proof.
+  destruct idx;auto.
+Qed.
+
+Lemma lsum_map {A} (f : A -> nat) (a : A) (l : list A) : lsum (map f (a :: l)) = f a + lsum (map f l).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma double_edit {A} (f1 f2 : A -> A) (i : nat) (l : list A) : edit i f2 (edit i f1 l) = edit i (fun x => f2 (f1 x)) l.
+Proof.
+  generalize dependent i.
+  induction l.
+  - destruct i; reflexivity.
+  - destruct i; auto. simpl. rewrite (IHl i). reflexivity.
+Qed.
+
+Lemma lsum_mod_inv (l : list nat) (i1 i2 d : nat) : length l > i1 /\ length l > i2 /\ nth i1 l 0 >= d -> lsum l = lsum (edit i2 (fun n => n + d) (edit i1 (fun n => n - d) l)).
+Proof.
+  intro H. destruct H as [Hin1 [Hin2 Hge]].
+  destruct (i1 <=? i2) eqn:Hfstle.
+  - apply PeanoNat.Nat.leb_le in Hfstle. destruct (i1 =? i2) eqn:Hfsteq.
+  -- apply PeanoNat.Nat.eqb_eq in Hfsteq. clear Hfstle. subst. rewrite double_edit. generalize dependent i2. induction l.
+  --- simpl. destruct i2; auto.
+  --- simpl. destruct i2; auto.
+  ---- simpl. intros. rewrite PeanoNat.Nat.sub_add; auto.
+  ---- simpl. intros. rewrite (IHl i2);auto; lia.
+  -- rewrite PeanoNat.Nat.eqb_neq in Hfsteq. assert (i1 < i2). { lia. } clear Hfstle. clear Hfsteq. generalize dependent i2. induction i1.
+  --- intros. destruct l.
+  ---- simpl. rewrite edit_nil. reflexivity.
+  ---- simpl. destruct i2. { lia. } clear H. simpl. generalize dependent i2. induction l.
+  ----- intros. simpl in Hin2. lia.
+  ----- intros. simpl in *. clear Hin1. destruct i2.
+  ------ simpl. lia.
+  ------ simpl. assert (S (length l) > 0). { lia. }
+         assert (S (length l) > S i2). { lia. }
+         pose (IHl H Hge i2 H0). lia.
+  --- 
+Qed.
+
 Theorem box_length_const (mov : nat * nat * nat) (state : list (list ascii)) : lsum (map (fun l => length l) state) = lsum (map (fun l => length l) (step1 mov state)).
 Proof.
-  destruct mov as [[cnt from] to]. induction state.
-  - simpl. symmetry. apply sum_0_all_0. intros.
+  destruct mov as [[cnt from] to].
 Admitted.
